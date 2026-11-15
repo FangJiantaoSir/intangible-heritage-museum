@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>展馆三｜抖空竹</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f8f3e9;
+            padding: 20px;
+        }
+        .nav-bar {
+            background: #8b4513;
+            padding:12px 20px;
+            border-radius:8px;
+            margin-bottom:20px;
+        }
+        .nav-bar a {
+            color:#fff8e8;
+            text-decoration:none;
+            margin-right:20px;
+            font-size:16px;
+        }
+        .wrap {
+            display:flex;
+            gap:20px;
+        }
+        .info-panel {
+            width:260px;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .info-panel h2 {
+            color:#8b4513;
+            margin-bottom:12px;
+        }
+        .canvas-box {
+            flex:1;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            text-align:center;
+        }
+        canvas {
+            border:2px solid #ddc8b0;
+            background:#fef9f0;
+        }
+        .tip-panel {
+            width:240px;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .tip-panel h3 {
+            color:#8b4513;
+            margin-bottom:10px;
+        }
+        .status-text {
+            margin:10px 0;
+            color:#444;
+            min-height:24px;
+        }
+        button {
+            padding:6px 12px;
+            margin:4px;
+            cursor:pointer;
+        }
+        .camera-preview { display:none; width:min(320px, 100%); margin:10px auto 0; }
+        .camera-preview.active { display:block; }
+        .camera-preview video { width:100%; border-radius:10px; transform:scaleX(-1); background:#21180f; }
+    </style>
+</head>
+<body>
+<div class="nav-bar">
+    <a href="index.html">🏠 返回大厅</a>
+    <a href="javascript:resetKongzhu()">🔄 重置空竹</a>
+</div>
+<div class="wrap">
+    <div class="info-panel">
+        <h2>抖空竹（展馆三）</h2>
+        <p>抖空竹属于传统体育、游艺与杂技类非遗。双手牵动绳索带动空竹高速旋转，讲究身体协调平衡，是民间老少皆宜的传统游乐技艺。</p>
+        <br>
+        <p><strong>交互方式：</strong></p>
+        <p>✅ 鼠标移动控制绳索平衡</p>
+        <p>✅ 摄像头手势控制空竹平衡</p>
+        <p>✅ 语音指令：抖起来、稳住、停下</p>
+        <br>
+        <p><em>提示：摄像头失效，鼠标可以独立完成体验。</em></p>
+    </div>
+    <div class="canvas-box">
+        <canvas id="kongzhuCanvas" width="600" height="420"></canvas>
+        <div class="status-text" id="kongzhuStatus">等待开始抖空竹</div>
+        <button id="cameraToggle" onclick="toggleCamera()">开启摄像头手势控制</button>
+        <button onclick="startKongzhuSpeech()">开启语音指令</button>
+        <div class="camera-preview" id="cameraPreview"><video id="gestureVideo" autoplay muted playsinline></video></div>
+    </div>
+    <div class="tip-panel">
+        <h3>操作提示</h3>
+        <p>🖱鼠标左右移动，控制空竹平衡</p>
+        <p>🖐 张开手掌左右移动控制空竹平衡；手掌高低调节转速</p>
+        <p>✊ 握拳暂停手势控制</p>
+        <p>⚠️倾斜过大会造成空竹掉落</p>
+        <br>
+        <p>体验完成条件：保持空竹稳定旋转一段时间</p>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('kongzhuCanvas');
+    const ctx = canvas.getContext('2d');
+    let x = 300, y = 180;
+    let rotate = 0;
+    let speed = 0;
+    let tilt = 0;
+    const gravity = 0.2;
+
+    function draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(tilt);
+        ctx.fillStyle="#b84020";
+        ctx.beginPath();
+        ctx.ellipse(0,0,45,22,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle="#f0c870";
+        ctx.beginPath();
+        ctx.ellipse(0,0,22,10,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+
+        rotate += speed;
+        if(Math.abs(tilt) > 1.2){
+            document.getElementById('kongzhuStatus').innerText = "空竹掉落！请点击重置";
+            speed = 0;
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+
+    canvas.onmousemove = (e)=>{
+        let rect = canvas.getBoundingClientRect();
+        let mx = e.clientX - rect.left;
+        if(mx < x) tilt -= 0.03;
+        else tilt += 0.03;
+        speed += 0.015;
+    }
+
+    function resetKongzhu(){
+        x = 300;
+        y = 180;
+        tilt = 0;
+        speed = 0;
+        document.getElementById('kongzhuStatus').innerText = "已重置，请开始抖空竹";
+    }
+    let cameraStarting = false;
+    async function toggleCamera(){
+        const button = document.getElementById('cameraToggle');
+        const preview = document.getElementById('cameraPreview');
+        const status = document.getElementById('kongzhuStatus');
+        if (window.HciGesture && HciGesture.isActive()) {
+            HciGesture.stop();
+            preview.classList.remove('active');
+            button.textContent = '开启摄像头手势控制';
+            status.innerText = '摄像头已关闭，可继续用鼠标控制空竹';
+            return;
+        }
+        if (cameraStarting) return;
+        cameraStarting = true;
+        button.disabled = true;
+        preview.classList.add('active');
+        status.innerText = '正在启动摄像头手势识别…';
+        const ok = await HciGesture.start({
+            video: document.getElementById('gestureVideo'),
+            onStatus: function (message) { status.innerText = message; },
+            onGesture: function (gesture) {
+                if (!gesture.open || (window.HciVoice && HciVoice.isLocked())) return;
+                const targetTilt = (gesture.x - 0.5) * 1.25;
+                tilt += (targetTilt - tilt) * 0.12;
+                // Raise an open palm to add spin; lower it to ease off.
+                const targetSpeed = Math.max(0, Math.min(0.8, (0.78 - gesture.y) * 0.85));
+                speed += (targetSpeed - speed) * 0.08;
+                x += ((gesture.x * canvas.width) - x) * 0.05;
+                x = Math.max(70, Math.min(canvas.width - 70, x));
+            }
+        });
+        cameraStarting = false;
+        button.disabled = false;
+        if (ok) button.textContent = '关闭摄像头手势控制';
+        else preview.classList.remove('active');
+    }
+
+    // 语音入口
+    function startKongzhuSpeech(){
+        if (window.HciVoice) { HciVoice.start(); }
+    }
+    window.addEventListener('beforeunload', function () { if (window.HciGesture) HciGesture.stop(); });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="js/gesture-control.js"></script>
+<!-- ===== 王迪：语音交互接入（抖空竹馆）开始 ===== -->
+<script src="js/voice.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    HciVoice.init({
+        hall: '抖空竹',
+        tips: ['抖起来', '稳住', '停下', '重置'],
+        intents: [
+            {
+                id: 'nav_back', label: '返回大厅', type: '导航',
+                examples: ['返回大厅', '回去'], desc: '结束体验并回到展馆大厅',
+                keywords: ['返回大厅', '回大厅', '回去', '回首页', '退出'],
+                action: function () { location.href = 'index.html'; },
+                reply: '正在返回大厅'
+            },
+            {
+                id: 'spin_up', label: '抖起来', type: '文化专属',
+                examples: ['抖起来', '加速'], desc: '提高空竹转速，模拟连续抖动的发力',
+                keywords: ['抖起来', '抖一下', '加速', '转快点', '快一点', '开始抖'],
+                action: function () {
+                    speed = Math.min(speed + 0.06, 1.0);
+                    document.getElementById('kongzhuStatus').innerText = '空竹转速提升，注意左右修正倾斜';
+                },
+                reply: '空竹转起来了，注意保持平衡'
+            },
+            {
+                id: 'steady', label: '稳住', type: '文化专属',
+                examples: ['稳住', '慢一点'], desc: '修正空竹倾斜，降低转速，模拟收力稳定',
+                keywords: ['稳住', '稳一点', '别晃', '慢一点', '减速', '收力'],
+                action: function () {
+                    tilt = tilt * 0.6;
+                    speed = Math.max(speed - 0.04, 0);
+                    document.getElementById('kongzhuStatus').innerText = '已修正倾斜，空竹变稳';
+                },
+                reply: '已经稳住，空竹平衡了'
+            },
+            {
+                id: 'stop', label: '停下', type: '操作',
+                examples: ['停下', '停'], desc: '停止旋转，空竹悬停',
+                keywords: ['停下', '停止', '停', '别转了', '暂停'],
+                action: function () {
+                    speed = 0;
+                    document.getElementById('kongzhuStatus').innerText = '空竹已停止旋转';
+                },
+                reply: '空竹已停下'
+            },
+            {
+                id: 'reset', label: '重置空竹', type: '操作',
+                examples: ['重置', '重新开始'], desc: '空竹回到初始位置与状态',
+                keywords: ['重置', '重新开始', '归位', '重来'],
+                action: function () { resetKongzhu(); },
+                reply: '已重置，可以重新抖空竹'
+            },
+            {
+                id: 'help', label: '指令帮助', type: '帮助',
+                examples: ['帮助', '能说什么'], desc: '列出本馆全部可用语音指令',
+                keywords: ['帮助', '怎么玩', '能说什么', '指令', '指令列表', '不会玩'],
+                action: function () { setTimeout(function () { HciVoice.openHelp(); }, 200); },
+                reply: '已打开抖空竹馆的语音指令列表'
+            }
+        ]
+    });
+})();
+</script>
+<!-- ===== 王迪：语音交互接入（抖空竹馆）结束 ===== -->
+</body>
+</html>

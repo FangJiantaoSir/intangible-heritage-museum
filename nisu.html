@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>展馆四｜泥塑</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f8f3e9;
+            padding: 20px;
+        }
+        .nav-bar {
+            background: #8b4513;
+            padding:12px 20px;
+            border-radius:8px;
+            margin-bottom:20px;
+        }
+        .nav-bar a {
+            color:#fff8e8;
+            text-decoration:none;
+            margin-right:20px;
+            font-size:16px;
+        }
+        .wrap {
+            display:flex;
+            gap:20px;
+        }
+        .info-panel {
+            width:260px;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .info-panel h2 {
+            color:#8b4513;
+            margin-bottom:12px;
+        }
+        .canvas-box {
+            flex:1;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            text-align:center;
+        }
+        canvas {
+            border:2px solid #ddc8b0;
+            background:#fef9f0;
+        }
+        .control-panel {
+            width:240px;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .control-panel h3 {
+            color:#8b4513;
+            margin-bottom:10px;
+        }
+        .status-text {
+            margin:10px 0;
+            color:#444;
+            min-height:24px;
+        }
+        button {
+            padding:6px 12px;
+            margin:4px;
+            cursor:pointer;
+        }
+        .size-box{
+            margin:10px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="nav-bar">
+    <a href="index.html">🏠 返回大厅</a>
+    <a href="javascript:resetNisu()">🔄 重置泥塑画布</a>
+</div>
+<div class="wrap">
+    <div class="info-panel">
+        <h2>泥塑（展馆四）</h2>
+        <p>泥塑是传统美术非遗，以黏土为原料，手工揉捏、堆塑、上色塑造人物小动物形象，天津泥人张、惠山泥人都是国内知名泥塑流派。</p>
+        <br>
+        <p><strong>交互方式：</strong></p>
+        <p>✅ 鼠标拖拽堆泥塑形</p>
+        <p>✅ 语音指令：换颜色、清除画布</p>
+        <br>
+        <p><em>麦克风不可用，点击按钮完成操作。</em></p>
+    </div>
+    <div class="canvas-box">
+        <canvas id="nisuCanvas" width="600" height="420"></canvas>
+        <div class="status-text" id="nisuStatus">按住鼠标堆塑泥团</div>
+        <button onclick="startSpeechNisu()">开启语音指令</button>
+    </div>
+    <div class="control-panel">
+        <h3>调色与尺寸面板</h3>
+        <button onclick="setClayColor('#965a38')">土棕色</button>
+        <button onclick="setClayColor('#dd4444')">红色</button>
+        <button onclick="setClayColor('#4477bb')">蓝色</button>
+        <button onclick="setClayColor('#f2c94c')">黄色</button>
+        <div class="size-box">
+            <p>泥团大小</p>
+            <button onclick="setSize(15)">小</button>
+            <button onclick="setSize(30)">中</button>
+            <button onclick="setSize(50)">大</button>
+        </div>
+        <br>
+        <p>🎤语音示例：换红色，清除画布</p>
+        <p>体验完成条件：堆塑出完整泥塑造型</p>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('nisuCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDraw = false;
+    let clayColor = "#965a38";
+    let clayRadius = 30;
+
+    canvas.onmousedown = (e)=>{
+        isDraw = true;
+        drawClay(e);
+    }
+    canvas.onmousemove = (e)=>{
+        if(!isDraw) return;
+        drawClay(e);
+    }
+    canvas.onmouseup = ()=> isDraw = false;
+    canvas.onmouseleave = ()=> isDraw = false;
+
+    function drawClay(e){
+        let rect = canvas.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+        ctx.fillStyle = clayColor;
+        ctx.beginPath();
+        ctx.arc(x, y, clayRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    function setClayColor(color){
+        clayColor = color;
+        document.getElementById('nisuStatus').innerText = "已切换泥料颜色";
+    }
+    function setSize(size){
+        clayRadius = size;
+        document.getElementById('nisuStatus').innerText = "已调整泥团尺寸";
+    }
+    function resetNisu(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        document.getElementById('nisuStatus').innerText = "画布清空，重新捏塑泥塑";
+    }
+    //预留语音识别入口
+    function startSpeechNisu(){
+        if (window.HciVoice) { HciVoice.start(); return; }
+        document.getElementById('nisuStatus').innerText = "语音监听已开启";
+        //Web Speech解析指令，调用setClayColor / resetNisu
+    }
+</script>
+<!-- ===== 王迪：语音交互接入（泥塑馆）开始 ===== -->
+<script src="js/voice.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    // 语音触发的预设泥塑造型（文化专属指令使用，不影响鼠标自由堆泥）
+    function vdClayShape(kind) {
+        ctx.save();
+        ctx.fillStyle = clayColor;
+        ctx.strokeStyle = clayColor;
+        var cx = canvas.width / 2, cy = canvas.height / 2 + 30;
+
+        if (kind === 'ren') {
+            ctx.beginPath();
+            ctx.arc(cx, cy - 150, 42, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx - 55, cy - 105);
+            ctx.lineTo(cx + 55, cy - 105);
+            ctx.lineTo(cx + 75, cy + 55);
+            ctx.lineTo(cx - 75, cy + 55);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx - 78, cy - 35, 20, 52, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx + 78, cy - 35, 20, 52, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 62, 92, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.ellipse(cx, cy - 60, 52, 62, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx - 20, cy - 150, 15, 55, -0.25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx + 20, cy - 150, 15, 55, 0.25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 20, 70, 46, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + 66, cy + 30, 16, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+        document.getElementById('nisuStatus').innerText = '已生成预设造型，可继续用鼠标堆泥细化';
+    }
+
+    HciVoice.init({
+        hall: '泥塑',
+        tips: ['换红色', '捏个泥人', '捏只兔子', '清除画布'],
+        intents: [
+            {
+                id: 'nav_back', label: '返回大厅', type: '导航',
+                examples: ['返回大厅', '回去'], desc: '结束体验并回到展馆大厅',
+                keywords: ['返回大厅', '回大厅', '回去', '回首页', '退出'],
+                action: function () { location.href = 'index.html'; },
+                reply: '正在返回大厅'
+            },
+            {
+                id: 'clay_ren', label: '捏个泥人', type: '文化专属',
+                examples: ['捏个泥人', '捏个人'], desc: '生成站姿泥人的基础造型',
+                keywords: ['捏个泥人', '捏个人', '泥人', '捏人'],
+                action: function () { vdClayShape('ren'); },
+                reply: '泥人基本造型已堆好，可用鼠标修细节'
+            },
+            {
+                id: 'clay_tu', label: '捏只兔子', type: '文化专属',
+                examples: ['捏只兔子', '捏个小兔'], desc: '生成兔子造型，含长耳与短尾',
+                keywords: ['捏只兔子', '捏个小兔', '捏兔子', '兔子', '小兔'],
+                action: function () { vdClayShape('tu'); },
+                reply: '兔子造型已堆好，换颜色可以继续上色'
+            },
+            {
+                id: 'clay_red', label: '泥料换红色', type: '操作',
+                examples: ['换红色', '上红色'], desc: '把泥料换成红色',
+                keywords: ['换红色', '上红色', '红色', '换红', '红泥'],
+                action: function () { setClayColor('#dd4444'); },
+                reply: '泥料已换成红色'
+            },
+            {
+                id: 'clay_blue', label: '泥料换蓝色', type: '操作',
+                examples: ['换蓝色', '上蓝色'], desc: '把泥料换成蓝色',
+                keywords: ['换蓝色', '上蓝色', '蓝色', '蓝泥'],
+                action: function () { setClayColor('#4477bb'); },
+                reply: '泥料已换成蓝色'
+            },
+            {
+                id: 'clay_yellow', label: '泥料换黄色', type: '操作',
+                examples: ['换黄色', '上黄色'], desc: '把泥料换成黄色',
+                keywords: ['换黄色', '上黄色', '黄色', '黄泥'],
+                action: function () { setClayColor('#f2c94c'); },
+                reply: '泥料已换成黄色'
+            },
+            {
+                id: 'clay_brown', label: '泥料换土棕', type: '操作',
+                examples: ['换土棕色', '换回土色'], desc: '恢复传统陶土的土棕色',
+                keywords: ['换土棕色', '土棕色', '土色', '棕色', '陶土'],
+                action: function () { setClayColor('#965a38'); },
+                reply: '泥料已恢复成陶土色'
+            },
+            {
+                id: 'size_big', label: '泥团加大', type: '操作',
+                examples: ['泥团大一点', '加大'], desc: '把泥团尺寸调大一档',
+                keywords: ['泥团大一点', '大一点', '加大', '变大', '大团'],
+                action: function () { setSize(50); },
+                reply: '泥团已调大一档'
+            },
+            {
+                id: 'size_small', label: '泥团缩小', type: '操作',
+                examples: ['泥团小一点', '缩小'], desc: '把泥团尺寸调小一档',
+                keywords: ['泥团小一点', '小一点', '缩小', '变小', '小团'],
+                action: function () { setSize(15); },
+                reply: '泥团已调小一档'
+            },
+            {
+                id: 'clear', label: '清除画布', type: '操作',
+                examples: ['清除画布', '重新捏'], desc: '清空画布重新塑形',
+                keywords: ['清除画布', '清空画布', '清除', '清空', '擦掉', '重新捏', '重置'],
+                action: function () { resetNisu(); },
+                reply: '画布已清空，可以重新捏塑'
+            },
+            {
+                id: 'help', label: '指令帮助', type: '帮助',
+                examples: ['帮助', '能说什么'], desc: '列出本馆全部可用语音指令',
+                keywords: ['帮助', '怎么玩', '能说什么', '指令', '指令列表', '不会玩'],
+                action: function () { setTimeout(function () { HciVoice.openHelp(); }, 200); },
+                reply: '已打开泥塑馆的语音指令列表'
+            }
+        ]
+    });
+})();
+</script>
+<!-- ===== 王迪：语音交互接入（泥塑馆）结束 ===== -->
+</body>
+</html>

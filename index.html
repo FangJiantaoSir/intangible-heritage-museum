@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>非遗数字化虚拟体验馆</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: #f8f3e9;
+        }
+        header {
+            background-color: #8b4513;
+            color: #fff8e8;
+            text-align: center;
+            padding: 30px 15px;
+        }
+        header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        .tip-box {
+            width: 90%;
+            max-width: 1000px;
+            margin: 20px auto;
+            background: #fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .tip-box h3 {
+            color:#8b4513;
+            margin-bottom:8px;
+        }
+        .tip-box p {
+            line-height:1.6;
+            color:#444;
+        }
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 40px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+            gap:24px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius:14px;
+            overflow:hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: 0.3s;
+            cursor:pointer;
+            border:2px solid #e6d2bb;
+        }
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 8px 20px rgba(139,69,19,0.2);
+            border-color:#8b4513;
+        }
+        .card-img {
+            height:160px;
+            background:#e9d9c5;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:40px;
+            color:#8b4513;
+        }
+        .card-content {
+            padding:18px;
+        }
+        .card-content h2 {
+            font-size:22px;
+            color:#5c3317;
+            margin-bottom:8px;
+        }
+        .card-content p {
+            font-size:15px;
+            color:#666;
+            line-height:1.5;
+        }
+        .card-tag{
+            margin-top:8px;
+            font-size:13px;
+            color:#995522;
+        }
+        footer {
+            text-align:center;
+            padding:25px;
+            margin-top:60px;
+            color:#777;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>非遗数字化虚拟体验馆</h1>
+    <p>多模态交互体验｜键鼠 · 摄像头视觉 · 语音交互</p>
+</header>
+
+<div class="tip-box">
+    <h3>📌 体验须知</h3>
+    <p>1. 必须以 localhost 服务打开网页，推荐Chrome浏览器；摄像头、麦克风仅本地识别，不上传、不保存用户影像音频<br>
+        2. 若拒绝摄像头/麦克风权限，所有展馆均可使用鼠标键盘完成全部体验任务（降级兜底）<br>
+        3. 每个展馆包含非遗文化介绍 + 核心交互体验，完成后可返回大厅切换其他展馆</p>
+</div>
+
+<div class="container">
+    <div class="card" onclick="location.href='piying.html'">
+        <div class="card-img">🎭</div>
+        <div class="card-content">
+            <h2>展馆一：皮影戏</h2>
+            <p>操控皮影人物移动，体验传统戏剧表演。</p>
+            <div class="card-tag">交互：键鼠 + 手势视觉 + 语音</div>
+        </div>
+    </div>
+
+    <div class="card" onclick="location.href='jianzhi.html'">
+        <div class="card-img">✂️</div>
+        <div class="card-content">
+            <h2>展馆二：剪纸</h2>
+            <p>模拟剪纸绘制、换色，创作属于自己的剪纸纹样。</p>
+            <div class="card-tag">交互：键鼠 + 语音</div>
+        </div>
+    </div>
+
+    <div class="card" onclick="location.href='kongzhu.html'">
+        <div class="card-img">🪀</div>
+        <div class="card-content">
+            <h2>展馆三：抖空竹</h2>
+            <p>模拟传统杂技抖空竹，保持空竹平衡旋转。</p>
+            <div class="card-tag">交互：键鼠 + 人体姿态视觉 + 语音</div>
+        </div>
+    </div>
+
+    <div class="card" onclick="location.href='nisu.html'">
+        <div class="card-img">🟤</div>
+        <div class="card-content">
+            <h2>展馆四：泥塑</h2>
+            <p>拖拽堆泥、调色，体验民间泥塑捏塑技艺。</p>
+            <div class="card-tag">交互：键鼠 + 语音</div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p>非遗虚拟体验馆｜人机交互课程大作业</p>
+</footer>
+
+<script>
+    console.log("非遗体验馆【首页大厅】加载完成");
+</script>
+<!-- ===== 王迪：语音交互接入（大厅语音导航）开始 ===== -->
+<script src="js/voice.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    HciVoice.init({
+        hall: '大厅',
+        tips: ['进入剪纸馆', '进入皮影馆', '帮助'],
+        intents: [
+            {
+                id: 'go_piying', label: '进入皮影戏馆', type: '导航',
+                examples: ['进入皮影馆', '打开皮影戏', '我要看皮影'], desc: '跳转到展馆一：皮影戏',
+                keywords: ['进入皮影', '打开皮影', '去皮影', '看皮影', '皮影馆', '皮影'],
+                action: function () { location.href = 'piying.html'; },
+                reply: '正在进入皮影戏馆'
+            },
+            {
+                id: 'go_jianzhi', label: '进入剪纸馆', type: '导航',
+                examples: ['进入剪纸馆', '我要剪窗花'], desc: '跳转到展馆二：剪纸',
+                keywords: ['进入剪纸', '打开剪纸', '去剪纸', '剪纸馆', '剪纸', '剪窗花'],
+                action: function () { location.href = 'jianzhi.html'; },
+                reply: '正在进入剪纸馆'
+            },
+            {
+                id: 'go_kongzhu', label: '进入抖空竹馆', type: '导航',
+                examples: ['进入空竹馆', '我要抖空竹'], desc: '跳转到展馆三：抖空竹',
+                keywords: ['进入空竹', '打开空竹', '去空竹', '空竹馆', '空竹', '抖空竹'],
+                action: function () { location.href = 'kongzhu.html'; },
+                reply: '正在进入抖空竹馆'
+            },
+            {
+                id: 'go_nisu', label: '进入泥塑馆', type: '导航',
+                examples: ['进入泥塑馆', '我要捏泥人'], desc: '跳转到展馆四：泥塑',
+                keywords: ['进入泥塑', '打开泥塑', '去泥塑', '泥塑馆', '泥塑', '捏泥人'],
+                action: function () { location.href = 'nisu.html'; },
+                reply: '正在进入泥塑馆'
+            },
+            {
+                id: 'help', label: '语音指令帮助', type: '帮助',
+                examples: ['帮助', '怎么玩'], desc: '查看四馆语音导航说法与使用说明',
+                keywords: ['帮助', '怎么玩', '能说什么', '指令', '不会用', '使用说明'],
+                action: function () { setTimeout(function () { HciVoice.openHelp(); }, 200); },
+                reply: '可以这样说：进入剪纸馆、进入皮影馆、进入空竹馆、进入泥塑馆'
+            }
+        ]
+    });
+})();
+</script>
+<!-- ===== 王迪：语音交互接入（大厅语音导航）结束 ===== -->
+</body>
+</html>

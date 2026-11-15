@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>展馆一｜皮影戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f8f3e9;
+            padding: 20px;
+        }
+        .nav-bar {
+            background: #8b4513;
+            padding:12px 20px;
+            border-radius:8px;
+            margin-bottom:20px;
+        }
+        .nav-bar a {
+            color:#fff8e8;
+            text-decoration:none;
+            margin-right:20px;
+            font-size:16px;
+        }
+        .wrap {
+            display:flex;
+            gap:20px;
+        }
+        .info-panel {
+            width:260px;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .info-panel h2 {
+            color:#8b4513;
+            margin-bottom:12px;
+        }
+        .canvas-box {
+            flex:1;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            text-align:center;
+        }
+        canvas {
+            border:2px solid #ddc8b0;
+            background:#fef9f0;
+        }
+        .tip-panel {
+            width:240px;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .tip-panel h3 {
+            color:#8b4513;
+            margin-bottom:10px;
+        }
+        .status-text {
+            margin:10px 0;
+            color:#444;
+            min-height:24px;
+        }
+        button {
+            padding:6px 12px;
+            margin:4px;
+            cursor:pointer;
+        }
+        .camera-preview { display:none; width:min(320px, 100%); margin:10px auto 0; }
+        .camera-preview.active { display:block; }
+        .camera-preview video { width:100%; border-radius:10px; transform:scaleX(-1); background:#21180f; }
+    </style>
+    <!-- MediaPipe Hands 手势识别CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+</head>
+<body>
+<div class="nav-bar">
+    <a href="index.html">🏠 返回大厅</a>
+    <a href="javascript:resetExp()">🔄 重置体验</a>
+</div>
+<div class="wrap">
+    <div class="info-panel">
+        <h2>皮影戏（展馆一）</h2>
+        <p>皮影戏是非物质文化遗产，古称“影子戏”，以兽皮刻制人物剪影，借助灯光投射在幕布上演故事，流传于我国南北各地。</p>
+        <br>
+        <p><strong>交互方式：</strong></p>
+        <p>✅ 鼠标拖拽皮影移动</p>
+        <p>✅ 摄像头手势控制（手掌移动）</p>
+        <p>✅ 语音指令：重置、切换角色</p>
+        <br>
+        <p><em>提示：摄像头授权失败，可只用鼠标完成全部体验。</em></p>
+    </div>
+    <div class="canvas-box">
+        <canvas id="piyingCanvas" width="600" height="420"></canvas>
+        <div class="status-text" id="status">等待开始体验</div>
+        <button id="cameraToggle" onclick="toggleCamera()">开启摄像头手势控制</button>
+        <button onclick="startSpeech()">开启语音指令</button>
+        <div class="camera-preview" id="cameraPreview"><video id="gestureVideo" autoplay muted playsinline></video></div>
+    </div>
+    <div class="tip-panel">
+        <h3>操作提示</h3>
+        <p>🖐 手掌在画面内移动 → 皮影跟随移动</p>
+        <p>✊ 握拳 → 皮影停止移动</p>
+        <p>🎤语音示例：重置、切换角色</p>
+        <br>
+        <p>体验完成条件：操纵皮影在画布内完成来回移动表演</p>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('piyingCanvas');
+    const ctx = canvas.getContext('2d');
+    let piyingX = 300, piyingY = 200;
+    let isDrag = false;
+
+    //绘制皮影简易剪影
+    function draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle="#8b4513";
+        ctx.fillRect(piyingX - 40, piyingY - 60, 80, 120);
+        ctx.beginPath();
+        ctx.arc(piyingX, piyingY-70,25,0,Math.PI*2);
+        ctx.fill();
+    }
+    draw();
+
+    //鼠标拖拽
+    canvas.onmousedown = (e)=>{isDrag=true;}
+    canvas.onmousemove = (e)=>{
+        if(isDrag){
+            let rect = canvas.getBoundingClientRect();
+            piyingX = e.clientX - rect.left;
+            piyingY = e.clientY - rect.top;
+            draw();
+        }
+    }
+    canvas.onmouseup = ()=>isDrag=false;
+    canvas.onmouseleave = ()=>isDrag=false;
+
+    //重置体验
+    function resetExp(){
+        piyingX = 300;
+        piyingY = 200;
+        draw();
+        document.getElementById('status').innerText = "体验已重置，请开始操纵皮影";
+    }
+
+    let cameraStarting = false;
+    async function toggleCamera(){
+        const button = document.getElementById('cameraToggle');
+        const preview = document.getElementById('cameraPreview');
+        if (window.HciGesture && HciGesture.isActive()) {
+            HciGesture.stop();
+            preview.classList.remove('active');
+            button.textContent = '开启摄像头手势控制';
+            document.getElementById('status').innerText = '摄像头已关闭，可继续用鼠标操纵皮影';
+            return;
+        }
+        if (cameraStarting) return;
+        cameraStarting = true;
+        button.disabled = true;
+        preview.classList.add('active');
+        document.getElementById('status').innerText = '正在启动摄像头手势识别…';
+        const ok = await HciGesture.start({
+            video: document.getElementById('gestureVideo'),
+            onStatus: function (message) { document.getElementById('status').innerText = message; },
+            onGesture: function (gesture) {
+                if (!gesture.open || isDrag || (window.HciVoice && HciVoice.isLocked())) return;
+                const targetX = gesture.x * canvas.width;
+                const targetY = gesture.y * canvas.height;
+                piyingX += (targetX - piyingX) * 0.22;
+                piyingY += (targetY - piyingY) * 0.22;
+                piyingX = Math.max(55, Math.min(canvas.width - 55, piyingX));
+                piyingY = Math.max(80, Math.min(canvas.height - 65, piyingY));
+                draw();
+            }
+        });
+        cameraStarting = false;
+        button.disabled = false;
+        if (ok) button.textContent = '关闭摄像头手势控制';
+        else preview.classList.remove('active');
+    }
+
+    //预留：语音识别入口 Web Speech API
+    function startSpeech(){
+        if (window.HciVoice) { HciVoice.start(); return; }
+        document.getElementById('status').innerText = "正在开启语音监听...";
+        //可接入webkitSpeechRecognition，解析“重置”“切换角色”指令调用对应函数
+    }
+    window.addEventListener('beforeunload', function () { if (window.HciGesture) HciGesture.stop(); });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="js/gesture-control.js"></script>
+<!-- ===== 王迪：语音交互接入（皮影馆）开始 ===== -->
+<script src="js/voice.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var vdChar = 'wusheng';
+    var vdTimer = null;
+
+    // 在原有皮影造型基础上扩展为三种角色（语音切换角色时使用）
+    function vdDraw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(piyingX, piyingY);
+        ctx.fillStyle = '#8b4513';
+        ctx.strokeStyle = '#8b4513';
+
+        if (vdChar === 'dan') {
+            // 旦角：长裙 + 水袖 + 发簪
+            ctx.beginPath();
+            ctx.moveTo(-36, 60);
+            ctx.lineTo(36, 60);
+            ctx.lineTo(20, -18);
+            ctx.lineTo(-20, -18);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(0, -44, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(-20, -8);
+            ctx.quadraticCurveTo(-72, 8, -82, -34);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(20, -8);
+            ctx.quadraticCurveTo(72, 8, 82, -34);
+            ctx.stroke();
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-14, -64);
+            ctx.lineTo(14, -64);
+            ctx.stroke();
+        } else if (vdChar === 'wukong') {
+            // 孙悟空：金箍棒在后，细腰身形 + 圆头 + 长尾
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(-78, -86);
+            ctx.lineTo(58, 62);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(0, 6, 22, 34, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(-22, 34);
+            ctx.lineTo(-34, 62);
+            ctx.lineTo(-14, 62);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(22, 34);
+            ctx.lineTo(14, 62);
+            ctx.lineTo(34, 62);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(0, -42, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-19, -44, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(19, -44, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(18, 18);
+            ctx.quadraticCurveTo(78, 30, 56, -26);
+            ctx.stroke();
+        } else {
+            // 武生：保留原有造型
+            ctx.fillRect(-40, -60, 80, 120);
+            ctx.beginPath();
+            ctx.arc(0, -70, 25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+    draw = vdDraw;
+
+    // 语音“开演”：皮影自动来回走动，鼠标按下即停止，尊重用户操作
+    function vdPerform() {
+        vdStopPerform();
+        var t0 = Date.now(), baseY = piyingY;
+        document.getElementById('status').innerText = '表演中：皮影自动来回走动，说“停下”可结束';
+        vdTimer = setInterval(function () {
+            var t = (Date.now() - t0) / 1000;
+            piyingX = 120 + (canvas.width - 240) * Math.abs(Math.sin(t * 1.1));
+            piyingY = baseY + Math.sin(t * 4) * 6;
+            draw();
+            if (t > 12) {
+                vdStopPerform();
+                piyingX = 300;
+                piyingY = 200;
+                draw();
+                document.getElementById('status').innerText = '表演结束，可以继续操纵皮影';
+            }
+        }, 30);
+    }
+    function vdStopPerform() {
+        if (vdTimer) { clearInterval(vdTimer); vdTimer = null; }
+    }
+    canvas.addEventListener('mousedown', vdStopPerform);
+
+    function vdSetChar(key, name) {
+        vdChar = key;
+        draw();
+        document.getElementById('status').innerText = '已切换角色：' + name;
+    }
+
+    HciVoice.init({
+        hall: '皮影',
+        tips: ['切换角色', '开演', '重置', '返回大厅'],
+        intents: [
+            {
+                id: 'nav_back', label: '返回大厅', type: '导航',
+                examples: ['返回大厅', '回去'], desc: '结束体验并回到展馆大厅',
+                keywords: ['返回大厅', '回大厅', '回去', '回首页', '退出'],
+                action: function () { location.href = 'index.html'; },
+                reply: '正在返回大厅'
+            },
+            {
+                id: 'char_wusheng', label: '切换武生', type: '文化专属',
+                examples: ['切换武生', '换武生'], desc: '把幕布上的皮影换成武生',
+                keywords: ['切换武生', '换武生', '武生'],
+                action: function () { vdSetChar('wusheng', '武生'); },
+                reply: '已换成武生角色'
+            },
+            {
+                id: 'char_dan', label: '切换旦角', type: '文化专属',
+                examples: ['切换旦角', '换旦角'], desc: '把幕布上的皮影换成旦角（带水袖）',
+                keywords: ['切换旦角', '换旦角', '旦角', '换女角'],
+                action: function () { vdSetChar('dan', '旦角'); },
+                reply: '已换成旦角角色'
+            },
+            {
+                id: 'char_wukong', label: '切换孙悟空', type: '文化专属',
+                examples: ['演孙悟空', '切换孙悟空'], desc: '把幕布上的皮影换成孙悟空（带金箍棒）',
+                keywords: ['切换孙悟空', '演孙悟空', '孙悟空', '换悟空', '猴子'],
+                action: function () { vdSetChar('wukong', '孙悟空'); },
+                reply: '已换成孙悟空角色'
+            },
+            {
+                id: 'perform', label: '开演', type: '文化专属',
+                examples: ['开演', '开始表演'], desc: '皮影自动来回走动约 12 秒',
+                keywords: ['开演', '开始表演', '演一段', '开始演', '表演'],
+                action: function () { vdPerform(); },
+                reply: '皮影开演了，想看别的角色可以说切换角色'
+            },
+            {
+                id: 'stop', label: '停下', type: '操作',
+                examples: ['停下', '别动了'], desc: '停止自动表演，交回手动控制',
+                keywords: ['停下', '停止', '别动了', '暂停', '停'],
+                action: function () { vdStopPerform(); },
+                reply: '表演已停止，可以用鼠标或手势继续操纵'
+            },
+            {
+                id: 'reset', label: '重置体验', type: '操作',
+                examples: ['重置', '重新开始'], desc: '皮影回到幕布中央，恢复默认角色',
+                keywords: ['重置', '重新开始', '归位', '回到中间', '重来'],
+                action: function () { vdStopPerform(); vdChar = 'wusheng'; resetExp(); },
+                reply: '已重置，皮影回到幕布中央'
+            },
+            {
+                id: 'help', label: '指令帮助', type: '帮助',
+                examples: ['帮助', '能说什么'], desc: '列出本馆全部可用语音指令',
+                keywords: ['帮助', '怎么玩', '能说什么', '指令', '指令列表', '不会玩'],
+                action: function () { setTimeout(function () { HciVoice.openHelp(); }, 200); },
+                reply: '已打开皮影馆的语音指令列表'
+            }
+        ]
+    });
+})();
+</script>
+<!-- ===== 王迪：语音交互接入（皮影馆）结束 ===== -->
+</body>
+</html>

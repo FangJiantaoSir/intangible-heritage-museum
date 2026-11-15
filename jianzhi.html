@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>展馆二｜剪纸技艺</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f8f3e9;
+            padding: 20px;
+        }
+        .nav-bar {
+            background: #8b4513;
+            padding:12px 20px;
+            border-radius:8px;
+            margin-bottom:20px;
+        }
+        .nav-bar a {
+            color:#fff8e8;
+            text-decoration:none;
+            margin-right:20px;
+            font-size:16px;
+        }
+        .wrap {
+            display:flex;
+            gap:20px;
+        }
+        .info-panel {
+            width:260px;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .info-panel h2 {
+            color:#8b4513;
+            margin-bottom:12px;
+        }
+        .canvas-box {
+            flex:1;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            text-align:center;
+        }
+        canvas {
+            border:2px solid #ddc8b0;
+            background:#ffffff;
+        }
+        .control-panel {
+            width:240px;
+            background:#fff;
+            padding:16px;
+            border-radius:10px;
+            border:1px solid #ddc8b0;
+        }
+        .control-panel h3 {
+            color:#8b4513;
+            margin-bottom:10px;
+        }
+        button {
+            padding:6px 12px;
+            margin:4px;
+            cursor:pointer;
+        }
+        .status-text {
+            margin:10px 0;
+            color:#444;
+            min-height:24px;
+        }
+    </style>
+</head>
+<body>
+<div class="nav-bar">
+    <a href="index.html">🏠 返回大厅</a>
+    <a href="javascript:resetCut()">🔄 重置剪纸画布</a>
+</div>
+<div class="wrap">
+    <div class="info-panel">
+        <h2>剪纸（展馆二）</h2>
+        <p>剪纸是国家级非物质文化遗产，以剪刀、刻刀在纸张上创作吉祥纹样，多用于节日窗花、婚俗装饰，是民间流传最广的美术形式。</p>
+        <br>
+        <p><strong>交互方式：</strong></p>
+        <p>✅ 鼠标拖拽绘制纹样</p>
+        <p>✅ 语音指令：换红色、清空画布</p>
+        <br>
+        <p><em>提示：麦克风不可用时，直接点击按钮操作。</em></p>
+    </div>
+    <div class="canvas-box">
+        <canvas id="cutCanvas" width="600" height="420"></canvas>
+        <div class="status-text" id="cutStatus">按住鼠标绘制剪纸纹样</div>
+        <button onclick="startSpeechCut()">开启语音指令</button>
+    </div>
+    <div class="control-panel">
+        <h3>操作面板</h3>
+        <button onclick="setColor('red')">红色</button>
+        <button onclick="setColor('black')">黑色</button>
+        <button onclick="setColor('gold')">金色</button>
+        <br><br>
+        <p>按住鼠标左键画布绘制纹样</p>
+        <p>🎤语音指令示例：换红色、清空画布</p>
+        <br>
+        <p>体验完成条件：绘制一幅完整剪纸纹样</p>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('cutCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDraw = false;
+    let drawColor = "#c82423";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+
+    canvas.onmousedown = (e)=>{
+        isDraw = true;
+        let rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+    canvas.onmousemove = (e)=>{
+        if(!isDraw) return;
+        let rect = canvas.getBoundingClientRect();
+        ctx.strokeStyle = drawColor;
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
+    }
+    canvas.onmouseup = ()=> isDraw = false;
+    canvas.onmouseleave = ()=> isDraw = false;
+
+    function setColor(type){
+        if(type === 'red') drawColor = "#c82423";
+        if(type === 'black') drawColor = "#222222";
+        if(type === 'gold') drawColor = "#d4af37";
+        document.getElementById('cutStatus').innerText = "已切换绘制颜色";
+    }
+    function resetCut(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        document.getElementById('cutStatus').innerText = "画布已清空，请重新绘制剪纸";
+    }
+    //预留语音入口
+    function startSpeechCut(){
+        if (window.HciVoice) { HciVoice.start(); return; }
+        document.getElementById('cutStatus').innerText = "语音监听已开启";
+        //Web Speech识别 “换红色”“清空画布”，调用setColor/resetCut
+    }
+</script>
+<!-- ===== 王迪：语音交互接入（剪纸馆）开始 ===== -->
+<script src="js/voice.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    // 语音触发的预设纹样（文化专属指令使用，不影响鼠标自由绘制）
+    function vdCutPattern(kind) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var cx = canvas.width / 2, cy = canvas.height / 2;
+        ctx.save();
+        ctx.strokeStyle = drawColor;
+        ctx.fillStyle = drawColor;
+        ctx.lineWidth = 4;
+
+        if (kind === 'fu') {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 150px KaiTi, STKaiti, "楷体", "Microsoft YaHei", serif';
+            ctx.fillText('福', cx, cy + 6);
+            ctx.lineWidth = 6;
+            ctx.strokeRect(26, 26, canvas.width - 52, canvas.height - 52);
+            ctx.lineWidth = 3;
+            ctx.strokeRect(38, 38, canvas.width - 76, canvas.height - 76);
+        } else if (kind === 'window') {
+            for (var i = 0; i < 6; i++) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(Math.PI / 3 * i);
+                ctx.beginPath();
+                ctx.ellipse(0, -95, 30, 56, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(0, -95, 12, 28, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.beginPath();
+            ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+            ctx.stroke();
+        } else {
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, 110, 55, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + 110, cy);
+            ctx.lineTo(cx + 170, cy - 46);
+            ctx.lineTo(cx + 170, cy + 46);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx - 62, cy - 16, 9, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+        document.getElementById('cutStatus').innerText = '已生成预设纹样，可继续用鼠标补充线条';
+    }
+
+    HciVoice.init({
+        hall: '剪纸',
+        tips: ['换红色', '剪个福字', '清空画布', '返回大厅'],
+        intents: [
+            {
+                id: 'nav_back', label: '返回大厅', type: '导航',
+                examples: ['返回大厅', '回去', '回首页'], desc: '结束体验并回到展馆大厅',
+                keywords: ['返回大厅', '回大厅', '回去', '回首页', '退出'],
+                action: function () { location.href = 'index.html'; },
+                reply: '正在返回大厅'
+            },
+            {
+                id: 'color_red', label: '换红色纸', type: '操作',
+                examples: ['换红色', '改成红纸'], desc: '把绘制颜色切换为剪纸红',
+                keywords: ['换红色', '换成红色', '换红', '红纸', '红色'],
+                action: function () { setColor('red'); },
+                reply: '已换成红色纸'
+            },
+            {
+                id: 'color_gold', label: '换金色纸', type: '操作',
+                examples: ['换金色', '换成金色'], desc: '把绘制颜色切换为烫金色',
+                keywords: ['换金色', '换成金色', '金色', '烫金', '金黄色', '换黄'],
+                action: function () { setColor('gold'); },
+                reply: '已换成金色'
+            },
+            {
+                id: 'color_black', label: '换黑色纸', type: '操作',
+                examples: ['换黑色', '黑色'], desc: '把绘制颜色切换为墨色',
+                keywords: ['换黑色', '黑色', '墨色', '换黑'],
+                action: function () { setColor('black'); },
+                reply: '已换成黑色'
+            },
+            {
+                id: 'pattern_fu', label: '剪福字', type: '文化专属',
+                examples: ['剪个福字', '我要福字'], desc: '生成带边框的福字剪纸纹样',
+                keywords: ['剪个福字', '画个福字', '剪福字', '福字', '福'],
+                action: function () { vdCutPattern('fu'); },
+                reply: '福字纹样已剪好，还可以用鼠标继续描线'
+            },
+            {
+                id: 'pattern_window', label: '换窗花团花', type: '文化专属',
+                examples: ['换个窗花', '剪个团花'], desc: '生成六瓣对称的窗花团花',
+                keywords: ['换个窗花', '剪个窗花', '窗花', '团花', '换纹样'],
+                action: function () { vdCutPattern('window'); },
+                reply: '六瓣窗花已经剪好'
+            },
+            {
+                id: 'pattern_fish', label: '剪年年有余', type: '文化专属',
+                examples: ['剪条鱼', '年年有余'], desc: '生成鱼形纹样，寓意年年有余',
+                keywords: ['剪条鱼', '剪个鱼', '年年有余', '鱼纹', '鱼'],
+                action: function () { vdCutPattern('fish'); },
+                reply: '鱼形纹样已生成，寓意年年有余'
+            },
+            {
+                id: 'clear', label: '清空画布', type: '操作',
+                examples: ['清空画布', '重新剪'], desc: '擦掉纸上所有线条，重新开始',
+                keywords: ['清空画布', '清空', '擦掉', '清除', '重新剪', '重新开始', '重置'],
+                action: function () { resetCut(); },
+                reply: '画布已清空，可以重新剪了'
+            },
+            {
+                id: 'help', label: '指令帮助', type: '帮助',
+                examples: ['帮助', '能说什么'], desc: '列出本馆全部可用语音指令',
+                keywords: ['帮助', '怎么玩', '能说什么', '指令', '指令列表', '不会玩'],
+                action: function () { setTimeout(function () { HciVoice.openHelp(); }, 200); },
+                reply: '已打开剪纸馆的语音指令列表'
+            }
+        ]
+    });
+})();
+</script>
+<!-- ===== 王迪：语音交互接入（剪纸馆）结束 ===== -->
+</body>
+</html>
+
